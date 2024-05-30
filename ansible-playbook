@@ -1,0 +1,39 @@
+# Website Setup - Site deployment tasks
+- name: Website Setup
+  hosts: localhost
+  vars_prompt:
+    - name: site_name
+      prompt: What is the full name of the website including the domain extension?
+      private: false
+    - name: root_dir
+      prompt: What is the root directory name of the website?
+      private: false
+  tasks:
+    - name: Copy non-www Apache2 file
+      template:
+        src: config/website/nonwww.template.j2
+        dest: /etc/apache2/sites-available/{{ site_name }}.conf
+      become: true
+    - name: Copy www Apache2 file
+      template:
+        src: config/website/www.template.j2
+        dest: /etc/apache2/sites-available/www.{{ site_name }}.conf
+      become: true
+    - name: Enable non-www Site
+      command: a2ensite {{ site_name }}.conf
+      become: true
+    - name: Enable www Site
+      command: a2ensite www.{{ site_name }}.conf
+      become: true
+    - name: Display message
+      command: echo "Sites enabled"
+      become: true
+      notify:
+        - Reload Apache2
+  handlers:
+    - name: Reload Apache2
+      become: true
+      become_method: sudo
+      service:
+        name: apache2
+        state: reloaded
